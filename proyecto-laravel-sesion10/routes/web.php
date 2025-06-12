@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PaginaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,3 +17,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/test', function () {
+    return view('welcome2');
+});
+
+Route::get('/inicio', [PaginaController::class, 'inicio']);
+Route::get('/inicio', [PaginaController::class, 'inicio']);
+Route::get('/saludo/{nombre}', function($nombre){
+    return "Hola, $nombre";
+});
+
+
