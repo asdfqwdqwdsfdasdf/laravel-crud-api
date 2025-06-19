@@ -4,6 +4,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SaludoController;
 use App\Http\Controllers\RegistroController;
 use App\Http\Controllers\EdadController;
+use App\Http\Controllers\BienvenidaController;
+use App\Http\Controllers\ContactoController;
+use App\Http\Controllers\TemperaturaController;
+use App\Http\Controllers\NotaController;
+use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\SumarController;
+use App\Http\Controllers;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -36,5 +44,36 @@ Route::get('/validar-edad/{edad}', [EdadController::class, 'validar']);
 
 // EJERCICIO 4
 
+Route::get('/contacto', [ContactoController::class, 'formulario']);
+Route::post('/contacto', [ContactoController::class, 'procesar']);
+
+// EJERCICIO 5
+Route::get('/acerca-de', function () {
+    return view('acerca');
+})->name('acerca');
+
+Route::get('/', function () {
+    return view('inicio');
+});
+
+// EJERCICIO 6
+ 
+Route::get('/bienvenida/{nombre?}', [BienvenidaController::class, 'saludo']);
+
+// EJERCICIO 7
+
+Route::get('/convertir', [TemperaturaController::class, 'formulario']);
+Route::post('/convertir', [TemperaturaController::class, 'convertir']);
+
+// EJERCICIO 8
+Route::get('/producto/{id}', [ProductoController::class, 'mostrar']);
+
+// EJERCICIO 9
 
 
+Route::get('/calificar', [NotaController::class, 'formulario']);
+Route::post('/calificar', [NotaController::class, 'evaluar']);
+
+// EJERCICIO 10
+Route::get('/sumar/{a}/{b}/{c}', [SumarController::class, 'sumar']);
+ 
