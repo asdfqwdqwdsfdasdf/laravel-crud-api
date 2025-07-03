@@ -260,6 +260,16 @@ CREATE DATABASE projectflow;
 # DEFINICION ESQUEMAS DE MIGRACION:
 Aquí tienes **los esquemas completos y correctos** de cada migración para tu proyecto **ProjectFlow**, basados en las reglas de negocio y relaciones que mencionaste.
 
+```php
+php artisan make:migration create_projects_table
+php artisan make:migration create_roles_table
+php artisan make:migration create_project_user_table
+php artisan make:migration create_tasks_table
+php artisan make:migration create_tags_table
+php artisan make:migration create_task_tag_table
+```
+
+
 ---
 
 ## 🧩 1. Tabla `users` (ya existe en Laravel, solo asegúrate de esto)
@@ -691,6 +701,225 @@ php artisan migrate:fresh --seed
  
 
 
+Perfecto. A continuación te entrego **todos los modelos Eloquent necesarios** para tu proyecto **ProjectFlow**, **completamente configurados con sus relaciones** según las reglas de negocio que planteaste.
+
+---
+
+## 🧠 1. Modelo `User`
+
+```php
+// app/Models/User.php
+
+namespace App\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable;
+
+    protected $fillable = ['name', 'email', 'password'];
+
+    protected $hidden = ['password'];
+
+    // 🔗 Relación: Un usuario puede crear muchos proyectos
+    public function createdProjects()
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    // 🔗 Relación: Usuarios que participan en muchos proyectos (M:M)
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class)
+                    ->withPivot('role_id')
+                    ->withTimestamps();
+    }
+
+    // 🔗 Relación: Un usuario tiene muchos roles a través de proyectos
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'project_user')
+                    ->withPivot('project_id')
+                    ->withTimestamps();
+    }
+
+    // 🔗 Relación: Un usuario puede tener muchas tareas asignadas
+    public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_to_user_id');
+    }
+}
+```
+
+---
+
+## 🧠 2. Modelo `Project`
+
+```php
+// app/Models/Project.php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class Project extends Model
+{
+    use HasFactory;
+
+    protected $fillable = ['title', 'description', 'status', 'start_date', 'end_date', 'user_id'];
+
+    // 🔗 Creador del proyecto
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // 🔗 Usuarios que participan en este proyecto
+    public function users()
+    {
+        return $this->belongsToMany(User::class)
+                    ->withPivot('role_id')
+                    ->withTimestamps();
+    }
+
+    // 🔗 Tareas del proyecto
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
+
+    // 🔗 Roles asignados a usuarios en este proyecto (a través de la tabla pivote)
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'project_user')
+                    ->withPivot('user_id')
+                    ->withTimestamps();
+    }
+}
+```
+
+---
+
+## 🧠 3. Modelo `Role`
+
+```php
+// app/Models/Role.php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class Role extends Model
+{
+    use HasFactory;
+
+    protected $fillable = ['name', 'description'];
+
+    // 🔗 Usuarios con este rol en proyectos
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'project_user')
+                    ->withPivot('project_id')
+                    ->withTimestamps();
+    }
+
+    // 🔗 Proyectos donde se ha asignado este rol
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class, 'project_user')
+                    ->withPivot('user_id')
+                    ->withTimestamps();
+    }
+}
+```
+
+---
+
+## 🧠 4. Modelo `Task`
+
+```php
+// app/Models/Task.php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class Task extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'title', 'description', 'status', 'priority',
+        'due_date', 'project_id', 'assigned_to_user_id'
+    ];
+
+    // 🔗 Proyecto al que pertenece la tarea
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    // 🔗 Usuario asignado a la tarea
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to_user_id');
+    }
+
+    // 🔗 Etiquetas asociadas a la tarea
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class)->withTimestamps();
+    }
+}
+```
+
+---
+
+## 🧠 5. Modelo `Tag`
+
+```php
+// app/Models/Tag.php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class Tag extends Model
+{
+    use HasFactory;
+
+    protected $fillable = ['name'];
+
+    // 🔗 Tareas que tienen esta etiqueta
+    public function tasks()
+    {
+        return $this->belongsToMany(Task::class)->withTimestamps();
+    }
+}
+```
+
+---
+
+✅ **Resumen de Relaciones Clave**:
+
+| Modelo  | Relaciones Principales                                                                    |
+| ------- | ----------------------------------------------------------------------------------------- |
+| User    | `hasMany(Project)` creados, `belongsToMany(Project)` con roles, `hasMany(Task)` asignadas |
+| Project | `belongsTo(User)` creador, `hasMany(Task)`, `belongsToMany(User)` con roles               |
+| Role    | `belongsToMany(User)`, `belongsToMany(Project)`                                           |
+| Task    | `belongsTo(Project)`, `belongsTo(User)` asignado, `belongsToMany(Tag)`                    |
+| Tag     | `belongsToMany(Task)`                                                                     |
+
+---
+
+¿Quieres que también te genere los **Factorys + Seeders con datos de ejemplo** para probar las relaciones desde Tinker o con endpoints?
 
 
 
